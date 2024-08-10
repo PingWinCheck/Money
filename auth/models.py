@@ -17,6 +17,6 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
     password_hash: Mapped[str]
     is_active: Mapped[bool] = mapped_column(default=True)
-    created_at: Mapped[datetime] = mapped_column(default=func.now)
-    update_at: Mapped[datetime] = mapped_column(default=func.now, onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    update_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
 
