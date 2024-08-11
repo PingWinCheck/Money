@@ -1,26 +1,20 @@
 from typing import Annotated
-from fastapi import APIRouter, Form, Depends, Body, Request
-from fastapi.responses import HTMLResponse
-from fastapi.security import OAuth2PasswordRequestForm
-from auth.schemas import UserCreate, UserCreate1
+from fastapi import APIRouter, Depends, Request
+
+from auth.dependences import get_session, bearer_schema
+from auth.schemas import UserCreate, UserBase
 from fastapi.templating import Jinja2Templates
-from auth.database import async_session_local
 from sqlalchemy.ext.asyncio import AsyncSession
-from auth.crud import create_user
+from auth.crud import user_create
 
 
 router = APIRouter(prefix='/auth', tags=['auth', 'user'])
 template = Jinja2Templates('auth/templates')
 
 
-async def get_session():
-    async with async_session_local() as session:
-        yield session
-
-
-@router.post('/register')
+@router.post('/register', response_model=UserBase)
 async def register(user: Annotated[UserCreate, Depends()], session: Annotated[AsyncSession, Depends(get_session)]):
-    current_user = await create_user(session=session, user=user)
+    current_user = await user_create(session=session, user=user)
     return current_user
 
 
@@ -28,3 +22,13 @@ async def register(user: Annotated[UserCreate, Depends()], session: Annotated[As
 @router.get('/login')
 async def reg(request: Request):
     return template.TemplateResponse(request, 'login.html')
+
+
+@router.post('/login')
+async def login():
+    pass
+
+
+@router.get('/test')
+async def test(token: Annotated[str, Depends(bearer_schema)]):
+    return 'ok'
