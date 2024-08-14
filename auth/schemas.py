@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, dataclasses, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Annotated
 from fastapi import Form
 from dataclasses import dataclass
@@ -24,3 +24,9 @@ class UserBase(BaseModel):
 
 class UserRead(UserBase):
     id: UUID
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = 'Bearer'
+

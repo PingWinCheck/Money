@@ -13,7 +13,7 @@ class User(Base):
     __tablename__ = 'users'
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    username: Mapped[str]
+    username: Mapped[str] = mapped_column(unique=True)
     email: Mapped[str] = mapped_column(unique=True)
     password_hash: Mapped[str]
     is_active: Mapped[bool] = mapped_column(default=True)

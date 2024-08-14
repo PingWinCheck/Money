@@ -3,7 +3,14 @@ from datetime import timedelta, timezone, datetime
 
 import bcrypt
 import jwt
+from fastapi import HTTPException, status
 from jwt.exceptions import ExpiredSignatureError
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.security import OAuth2PasswordRequestForm
+
+from auth.models import User
+from auth.schemas import UserCreate
+from auth.crud import user_read
 from settings import settings
 
 
@@ -33,3 +40,11 @@ def check_jwt(token: str) -> dict | None:
     except ExpiredSignatureError:
         return None
 
+
+async def authenticate_user(form_data: OAuth2PasswordRequestForm, session: AsyncSession) -> User | None:
+    current_user = await user_read(session=session, username=form_data.username)
+    if current_user is None:
+        return None
+    if not check_password(form_data.password, current_user.password_hash):
+        return None
+    return current_user
