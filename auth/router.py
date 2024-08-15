@@ -5,12 +5,14 @@ from asyncpg import UniqueViolationError
 from fastapi import APIRouter, Depends, Request, HTTPException, status, Form
 from sqlalchemy.exc import IntegrityError
 
-from auth.dependences import get_session, get_current_user
+from auth.dependences import get_session, get_current_user, get_current_user_db
 from fastapi.security import OAuth2PasswordRequestForm
+
+from auth.models import User
 from auth.schemas import UserCreate, UserBase, Token
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
-from auth.crud import user_create, user_read, user_update_password
+from auth.crud import user_create, user_read, user_update_password, user_delete
 from auth.utils import check_password, gen_jwt, authenticate_user
 import secrets
 from datetime import timedelta
@@ -77,3 +79,14 @@ async def change_password(username: str,
                             detail=f'{e}')
     return user
 
+
+@router.delete('/user/{username}')
+async def del_user(username: str, session: Annotated[AsyncSession, Depends(get_session)]):
+    if await user_delete(session=session, username=username):
+        return 'ok'
+    return 'error'
+
+
+@router.get('/my_profile', response_model=UserBase)
+async def my_profile(user: Annotated[User, Depends(get_current_user_db)]):
+    return user

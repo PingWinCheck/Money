@@ -1,4 +1,4 @@
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -32,4 +32,14 @@ async def user_update_password(session: AsyncSession, username: str, new_passwor
     await session.commit()
     await session.refresh(current_user)
     return current_user
+
+
+async def user_delete(session: AsyncSession, username: str):
+    # try:
+    #     await session.execute(delete(User).where(User.username == username))
+    #     await session.commit()
+    #     return True
+    # except:
+    #     return False
+    current_user = await session.execute(select(User).where(User.username == username))
 
