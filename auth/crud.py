@@ -22,9 +22,8 @@ async def user_read(session: AsyncSession, username: str) -> User:
     return current_user.scalar()
 
 
-async def user_update_password(session: AsyncSession, username: str, new_password: str, old_password: str):
+async def user_update_password(session: AsyncSession, current_user: User, new_password: str, old_password: str):
     from auth.utils import gen_password_hash, check_password
-    current_user = await user_read(session=session, username=username)
     if not check_password(old_password, current_user.password_hash):
         raise ValueError('Старый пароль не верный')
     password_hash = gen_password_hash(new_password)

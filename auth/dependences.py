@@ -29,14 +29,13 @@ async def get_current_user(token: Annotated[str, Depends(bearer_schema)]):
 
 
 async def get_current_user_db(token: Annotated[str, Depends(bearer_schema)],
-                              session: Annotated[AsyncSession, Depends(get_session)]):
+                              session: Annotated[AsyncSession, Depends(get_session)],
+                              ) -> User:
     payload = check_jwt(token)
-    print(f'{payload=}')
     if payload is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail='token expire',
                             headers={'WWW-Authenticate': 'Bearer'})
     sub = payload.get('sub')
     current_user = await user_read(session=session, username=sub)
-    print(current_user)
     return current_user

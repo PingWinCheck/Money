@@ -60,18 +60,15 @@ async def secret(username: str,
     return user
 
 
-@router.put('/user/{username}', response_model=UserBase)
-async def change_password(username: str,
-                          old_password: Annotated[str, Form()],
+@router.put('/my_profile', response_model=UserBase)
+async def change_password(old_password: Annotated[str, Form()],
                           new_password: Annotated[str, Form()],
-                          current_user: Annotated[str, Depends(get_current_user)],
+                          current_user: Annotated[User, Depends(get_current_user_db)],
                           session: Annotated[AsyncSession, Depends(get_session)]):
-    if not secrets.compare_digest(username, current_user):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail='У вас нет доступа к чужому аккаунту')
+
     try:
         user = await user_update_password(session=session,
-                                          username=username,
+                                          current_user=current_user,
                                           new_password=new_password,
                                           old_password=old_password)
     except ValueError as e:
