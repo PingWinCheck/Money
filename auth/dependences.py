@@ -18,24 +18,15 @@ async def get_session() -> AsyncSession:
 bearer_schema = OAuth2PasswordBearer('/auth/token')
 
 
-async def get_current_user(token: Annotated[str, Depends(bearer_schema)]):
+async def get_current_payload_in_token(token: Annotated[str, Depends(bearer_schema)]):
     payload = check_jwt(token)
-    if payload is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='token expire',
-                            headers={'WWW-Authenticate': 'Bearer'})
-    sub = payload.get('sub')
-    return sub
+    return payload
 
 
 async def get_current_user_db(token: Annotated[str, Depends(bearer_schema)],
                               session: Annotated[AsyncSession, Depends(get_session)],
                               ) -> User:
     payload = check_jwt(token)
-    if payload is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='token expire',
-                            headers={'WWW-Authenticate': 'Bearer'})
     sub = payload.get('sub')
     current_user = await user_read(session=session, username=sub)
     return current_user

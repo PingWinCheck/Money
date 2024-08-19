@@ -33,7 +33,7 @@ async def user_update_password(session: AsyncSession, current_user: User, new_pa
     return current_user
 
 
-async def user_delete(session: AsyncSession, username: str):
+async def user_delete(session: AsyncSession, current_user: User):
     # try:
     #     await session.execute(delete(User).where(User.username == username))
     #     await session.commit()
