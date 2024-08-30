@@ -52,7 +52,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                       'email': current_user.email}
     access_token = gen_jwt(payload=payload_access, expire=timedelta(seconds=settings.expire_access_token_seconds))
     jti = await generate_jti_and_add_or_update_redis(user=current_user.username,
-                                           expire_seconds=settings.expire_refresh_token_seconds)
+                                                     expire_seconds=settings.expire_refresh_token_seconds)
     payload_refresh = payload_access.copy()
     payload_refresh['jti'] = jti
     refresh_token = gen_jwt(payload=payload_refresh,

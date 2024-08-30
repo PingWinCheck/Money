@@ -21,6 +21,7 @@ bcrypt = "^4.2.0"
 pyjwt = {extras = ["crypto"], version = "^2.9.0"}
 redis = "^5.0.8"
 aioredis = "^2.0.1"
+fastapi-cache2 = "^0.2.2"
 
 
 [build-system]
