@@ -6,7 +6,8 @@ from asyncpg import UniqueViolationError
 from fastapi import APIRouter, Depends, Request, HTTPException, status, Form
 from sqlalchemy.exc import IntegrityError
 
-from auth.dependences import get_session, get_current_payload_in_token, get_current_user_db, bearer_schema
+from auth.dependences import get_current_payload_in_token, get_current_user_db, bearer_schema
+from core.dependencies import get_session
 from fastapi.security import OAuth2PasswordRequestForm
 
 from auth.models import User

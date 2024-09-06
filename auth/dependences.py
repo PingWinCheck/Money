@@ -2,18 +2,12 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import async_session_local
+from core.dependencies import get_session
 from fastapi.security import OAuth2PasswordBearer
 
 from auth.models import User
 from auth.utils import check_jwt
 from auth.crud import user_read
-
-
-async def get_session() -> AsyncSession:
-    async with async_session_local() as session:
-        yield session
-
 
 bearer_schema = OAuth2PasswordBearer('/auth/token')
 
