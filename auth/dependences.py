@@ -1,8 +1,8 @@
 from typing import Annotated
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.database import async_session_local
+from database import async_session_local
 from fastapi.security import OAuth2PasswordBearer
 
 from auth.models import User

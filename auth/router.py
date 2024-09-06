@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Optional
 from uuid import UUID
 
 from asyncpg import UniqueViolationError
@@ -78,12 +78,18 @@ async def refresh(payload_current_token: Annotated[dict, Depends(get_current_pay
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
-@router.get('/user/{username}', response_model=UserBase)
-async def secret(username: str,
-                 # user_id: Annotated[str, Depends(get_current_user)],
-                 session: Annotated[AsyncSession, Depends(get_session)]):
+@router.get('/user/{username}',
+            response_model=UserBase,
+            responses={404: {'description': 'Пользователя с ником: {username} не существует'}}
+            )
+async def get_user(username: str,
+                   # user_id: Annotated[str, Depends(get_current_user)],
+                   session: Annotated[AsyncSession, Depends(get_session)]):
     user = await user_read(session=session, username=username)
-    return user
+    if user:
+        return user
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f'Пользователя с ником: {username} не существует')
 
 
 @router.put('/my_profile', response_model=UserBase)
