@@ -36,12 +36,13 @@ class Money(Base):
     photo_link: Mapped[str | None] = None
     type_money_id: Mapped[int] = mapped_column(ForeignKey('types_moneys.id'))
     type_money: Mapped["TypeMoney"] = relationship("TypeMoney", back_populates='moneys')
-    # users: Mapped[list["User"]] = relationship('User', secondary='MoneyForUser', back_populates='moneys')
+    users: Mapped[list["User"]] = relationship('User', secondary='money_for_users', back_populates='moneys')
 
 
-# class MoneyForUser(Base):
-#     __tablename__ = 'money_for_users'
-#
-#     money_id: Mapped[int] = mapped_column(ForeignKey('moneys.id'), primary_key=True)
-#     user_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'), primary_key=True)
+class MoneyForUser(Base):
+    __tablename__ = 'money_for_users'
+
+    money_id: Mapped[int] = mapped_column(ForeignKey('moneys.id'), primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'), primary_key=True)
+    # count: Mapped[int] = mapped_column(default=1, server_default='1')
 
