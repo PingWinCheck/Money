@@ -1,16 +1,34 @@
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, Result, desc, and_
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy import select, Result, desc, and_, func
+from sqlalchemy.orm import joinedload, selectinload, contains_eager
 from auth.models import User
 from catalog.models import Ruler, TypeMoney, Money, MoneyForUser
 
 
-async def get_rulers(session: AsyncSession) -> list[Ruler]:
-    stmt = select(Ruler).order_by(Ruler.start_year)
-    result: Result = await session.execute(stmt)
-    return list(result.scalars())
+# async def get_rulers(session: AsyncSession) -> list[Ruler]:
+#     stmt = select(Ruler).order_by(Ruler.start_year)
+#     result: Result = await session.execute(stmt)
+#     return list(result.scalars())
+
+
+async def get_rulers_v2(session: AsyncSession,
+                        offset: int,
+                        limit: int):
+    stmt = (select(Ruler).order_by(Ruler.start_year).limit(limit).offset(offset))
+    result = await session.scalars(stmt)
+    return list(result)
+
+
+# async def get_count_all_rulers(session: AsyncSession):
+#     stmt = (select(func.count(Ruler.id)))
+#     return await session.scalar(stmt)
+
+
+async def get_total_count_for_ruler(session: AsyncSession):
+    stmt = (select(func.count(Ruler.id)))
+    return await session.scalar(stmt)
 
 
 async def get_types_moneys_for_ruler(ruler_id: int,
@@ -19,6 +37,24 @@ async def get_types_moneys_for_ruler(ruler_id: int,
             .where(TypeMoney.ruler_id == ruler_id))
     result: Result = await session.execute(stmt)
     return list(result.scalars())
+
+
+async def get_ruler_with_type_money_list(ruler_id: int,
+                                         session: AsyncSession):
+    stmt = (select(Ruler).options(selectinload(Ruler.type_moneys))).where(Ruler.id == ruler_id)
+    return await session.scalar(stmt)
+
+
+async def get_ruler_with_type_with_money_list(ruler_id: int,
+                                              type_id: int,
+                                              session: AsyncSession):
+    # stmt_sub = (select(TypeMoney.ruler_id).where(TypeMoney.id == type_id).subquery())
+    # stmt = (select(Ruler).options(selectinload(Ruler.type_moneys))
+    #         .where(Ruler.id == ruler_id, Ruler.id.in_(stmt_sub)))
+
+    stmt = (select(Ruler).options(contains_eager(Ruler.type_moneys).options(selectinload(TypeMoney.moneys)))
+            .where(Ruler.id == ruler_id, TypeMoney.id == type_id, TypeMoney.ruler_id == ruler_id))
+    return await session.scalar(stmt)
 
 
 async def get_money_for_type_unique(type_id: int,

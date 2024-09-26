@@ -1,8 +1,12 @@
 from uuid import UUID
-
+from typing import TYPE_CHECKING
 from database import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
+
+
+if TYPE_CHECKING:
+    from auth.models import User
 
 
 class Ruler(Base):
@@ -44,5 +48,5 @@ class MoneyForUser(Base):
 
     money_id: Mapped[int] = mapped_column(ForeignKey('moneys.id'), primary_key=True)
     user_id: Mapped[UUID] = mapped_column(ForeignKey('users.id'), primary_key=True)
-    # count: Mapped[int] = mapped_column(default=1, server_default='1')
+    # count: Mapped[int] = mapped_column(default=1, server_default='1', )
 

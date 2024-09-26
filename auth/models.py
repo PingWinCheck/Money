@@ -1,9 +1,14 @@
 from uuid import uuid4, UUID
 from datetime import datetime
+from typing import TYPE_CHECKING
 # from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 # from catalog.models import MoneyForUser
 from database import Base
+
+
+if TYPE_CHECKING:
+    from catalog.models import Money
 
 
 class User(Base):
