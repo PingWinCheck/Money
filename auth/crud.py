@@ -42,3 +42,9 @@ async def user_delete(session: AsyncSession, current_user: User):
     #     return False
     current_user = await session.execute(select(User).where(User.username == username))
 
+
+async def verification_mail_true(session: AsyncSession, current_user: User):
+    current_user.is_verification_email = True
+    await session.commit()
+    await session.refresh(current_user)
+    return current_user

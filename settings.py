@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Annotated
+from dotenv import load_dotenv
 
 
 class Settings(BaseSettings):
@@ -23,6 +24,11 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
 
+    # smtp
+    smtp_pass: str = ''
+    smtp_login: str = ''
 
+
+load_dotenv()
 settings = Settings()
 

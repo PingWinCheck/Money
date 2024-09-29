@@ -3,10 +3,11 @@ from typing import Annotated, Optional
 from uuid import UUID
 
 from asyncpg import UniqueViolationError
-from fastapi import APIRouter, Depends, Request, HTTPException, status, Form
+from fastapi import APIRouter, Depends, Request, HTTPException, status, Form, BackgroundTasks
 from sqlalchemy.exc import IntegrityError
 
 from auth.dependences import get_current_payload_in_token, get_current_user_db, bearer_schema
+from auth.mail_service.sender_messages import send_message_verification_mail
 from core.dependencies import get_session
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -14,11 +15,14 @@ from auth.models import User
 from auth.schemas import UserCreate, UserBase, Token
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
-from auth.crud import user_create, user_read, user_update_password, user_delete
-from auth.utils import check_password, gen_jwt, authenticate_user, generate_jti_and_add_or_update_redis, check_jti_in_redis
+from auth.crud import user_create, user_read, user_update_password, user_delete, verification_mail_true
+from auth.utils import (check_password, gen_jwt, authenticate_user, generate_jti_and_add_or_update_redis,
+                        check_jti_in_redis)
 import secrets
 from datetime import timedelta
 from settings import settings
+from auth.redis import redis_client
+
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 template = Jinja2Templates('auth/templates')
@@ -120,4 +124,26 @@ async def del_user(session: Annotated[AsyncSession, Depends(get_session)]):
 @router.get('/my_profile', response_model=UserBase)
 async def my_profile(user: Annotated[User, Depends(get_current_user_db)]):
     return user
+
+
+@router.get('/confirm-mail')
+async def confirm_mail(user: Annotated[User, Depends(get_current_user_db)],
+                       session: Annotated[AsyncSession, Depends(get_session)],
+                       background_tasks: BackgroundTasks,
+                       token: str | None = None):
+    if token:
+        user_id = redis_client.get(token)
+        if user_id:
+            user_id = UUID(user_id.decode('utf-8'))
+            if user.id == user_id:
+                await verification_mail_true(session=session, current_user=user)
+                redis_client.delete(token)
+                return {'message': 'Почта подтверждена'}
+            return {'message': 'Токен вам не принадлежит'}
+        return {'message': 'Токена не существует'}
+    else:
+        background_tasks.add_task(send_message_verification_mail, user.email, user.id)
+        return {'message': f'Для подтверждения почты, оправлено письмо к вам на почту {user.email}'}
+
+
 

@@ -3,6 +3,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 # from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import expression
+
 # from catalog.models import MoneyForUser
 from database import Base
 
@@ -19,6 +21,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
     password_hash: Mapped[str]
     is_active: Mapped[bool] = mapped_column(default=True)
+    is_verification_email: Mapped[bool] = mapped_column(default=False, server_default=expression.false())
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     update_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
     moneys: Mapped[list["Money"]] = relationship('Money', secondary='money_for_users', back_populates='users')
