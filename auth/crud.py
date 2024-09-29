@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -48,3 +50,9 @@ async def verification_mail_true(session: AsyncSession, current_user: User):
     await session.commit()
     await session.refresh(current_user)
     return current_user
+
+
+async def user_read_with_id(user_id: UUID,
+                            session: AsyncSession):
+    stmt = select(User).where(User.id == user_id)
+    return await session.scalar(stmt)

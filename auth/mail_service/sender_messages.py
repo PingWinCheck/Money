@@ -18,7 +18,7 @@ def send_message_verification_mail(to: EmailStr, user_id: UUID):
     token = generate_token()
     redis_client.set(name=token, value=str(user_id), ex=60 * 60)
 
-    url = f'http://localhost:8000/auth/confirm-mail/?token={token}'
+    url = f'http://localhost:8000/auth/confirm-mail/{token}'
     body = f"""Подтвердите регистрацию перейдя по ссылке {url}
     Если вы не совершали никаких действии, просто проигнорируйте это сообщение
     """
