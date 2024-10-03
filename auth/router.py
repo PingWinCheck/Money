@@ -23,19 +23,34 @@ import secrets
 from datetime import timedelta
 from settings import settings
 from auth.redis import redis_client
-
+from auth.dao import UserDAO
+from auth.utils import gen_password_hash
+from auth.exeptions import ex_user_is_already, ex_invalid_login_or_password
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 template = Jinja2Templates('auth/templates')
 
 
-@router.post('/register', response_model=UserBase)
+# @router.post('/register', response_model=UserBase)
+# async def register(user: Annotated[UserCreate, Depends()], session: Annotated[AsyncSession, Depends(get_session)]):
+#     try:
+#         current_user = await user_create(session=session, user=user)
+#     except IntegrityError:
+#         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+#                             detail='User or email is already exists')
+#     return current_user
+
+@router.post('/register', response_model=UserBase, responses={409: {'description': ex_user_is_already.detail}})
 async def register(user: Annotated[UserCreate, Depends()], session: Annotated[AsyncSession, Depends(get_session)]):
-    try:
-        current_user = await user_create(session=session, user=user)
-    except IntegrityError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='User or email is already exists')
+    password_hash = gen_password_hash(user.password)
+    already_exists = await UserDAO.get_one_or_none_item_by_filter(session=session,
+                                                                  username=user.username)
+    if already_exists:
+        raise ex_user_is_already
+    current_user = await UserDAO.create_item(session=session,
+                                             username=user.username,
+                                             email=user.email,
+                                             password_hash=password_hash)
     return current_user
 
 
@@ -50,13 +65,12 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                 session: Annotated[AsyncSession, Depends(get_session)]):
     current_user = await authenticate_user(form_data, session)
     if current_user is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail='Invalid login or password',
-                            headers={'WWW-Authenticate': 'Bearer'})
+        raise ex_invalid_login_or_password
     payload_access = {'sub': current_user.username,
                       'id': str(current_user.id),
                       'email': current_user.email}
-    access_token = gen_jwt(payload=payload_access, expire=timedelta(seconds=settings.expire_access_token_seconds))
+    access_token = gen_jwt(payload=payload_access,
+                           expire=timedelta(seconds=settings.expire_access_token_seconds))
     jti = await generate_jti_and_add_or_update_redis(user=current_user.username,
                                                      expire_seconds=settings.expire_refresh_token_seconds)
     payload_refresh = payload_access.copy()
@@ -91,7 +105,8 @@ async def refresh(payload_current_token: Annotated[dict, Depends(get_current_pay
 async def get_user(username: str,
                    # user_id: Annotated[str, Depends(get_current_user)],
                    session: Annotated[AsyncSession, Depends(get_session)]):
-    user = await user_read(session=session, username=username)
+    # user = await user_read(session=session, username=username)
+    user = await UserDAO.get_one_or_none_item_by_filter(session=session, username=username)
     if user:
         return user
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -103,7 +118,7 @@ async def change_password(old_password: Annotated[str, Form()],
                           new_password: Annotated[str, Form()],
                           current_user: Annotated[User, Depends(get_current_user_db)],
                           session: Annotated[AsyncSession, Depends(get_session)]):
-
+    # TODO переписать круд на дао
     try:
         user = await user_update_password(session=session,
                                           current_user=current_user,
@@ -133,8 +148,9 @@ async def confirm_mail_token(session: Annotated[AsyncSession, Depends(get_sessio
     user_id = redis_client.get(token)
     if user_id:
         user_id = UUID(user_id.decode('utf-8'))
-        current_user = await user_read_with_id(session=session, user_id=user_id)
-        await verification_mail_true(session=session, current_user=current_user)
+        # current_user = await user_read_with_id(session=session, user_id=user_id)
+        current_user = await UserDAO.get_one_or_none_item_by_filter(session=session, user_id=user_id)
+        await verification_mail_true(session=session, current_user=current_user)  # TODO переписать круд на дао
         redis_client.delete(token)
         return {'message': 'Почта подтверждена'}
     return {'message': 'Токена не существует'}

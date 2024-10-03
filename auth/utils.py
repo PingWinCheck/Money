@@ -14,6 +14,7 @@ from auth.schemas import UserCreate
 from auth.crud import user_read
 from settings import settings
 from auth.redis import redis_client
+from auth.dao import UserDAO
 
 
 def gen_password_hash(password: str) -> str:
@@ -45,7 +46,8 @@ def check_jwt(token: str) -> dict | None:
 
 
 async def authenticate_user(form_data: OAuth2PasswordRequestForm, session: AsyncSession) -> User | None:
-    current_user = await user_read(session=session, username=form_data.username)
+    # current_user = await user_read(session=session, username=form_data.username)
+    current_user = await UserDAO.get_one_or_none_item_by_filter(session=session, username=form_data.username)
     if current_user is None:
         return None
     if not check_password(form_data.password, current_user.password_hash):
