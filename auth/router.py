@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated, Optional
 from uuid import UUID
-
+from pydantic import EmailStr
 from asyncpg import UniqueViolationError
 from fastapi import APIRouter, Depends, Request, HTTPException, status, Form, BackgroundTasks
 from sqlalchemy.exc import IntegrityError
@@ -149,7 +149,7 @@ async def confirm_mail_token(session: Annotated[AsyncSession, Depends(get_sessio
     if user_id:
         user_id = UUID(user_id.decode('utf-8'))
         # current_user = await user_read_with_id(session=session, user_id=user_id)
-        current_user = await UserDAO.get_one_or_none_item_by_filter(session=session, user_id=user_id)
+        current_user = await UserDAO.get_one_or_none_item_by_filter(session=session, id=user_id)
         await verification_mail_true(session=session, current_user=current_user)  # TODO переписать круд на дао
         redis_client.delete(token)
         return {'message': 'Почта подтверждена'}
@@ -162,5 +162,12 @@ async def confirm_mail(user: Annotated[User, Depends(get_current_user_db)],
     background_tasks.add_task(send_message_verification_mail, user.email, user.id)
     return {'message': f'Для подтверждения почты, оправлено письмо к вам на почту {user.email}'}
 
+
+# @router.post('/swap_mail')
+# async def swap_mail(session: Annotated[AsyncSession, Depends(get_session)],
+#                     current_user: Annotated[User, Depends(get_current_user_db)],
+#                     mail: Annotated[EmailStr, Form()]):
+#     result = await UserDAO.update_item_by_id(session=session, model_id=current_user.id, email=mail)
+#     return 'result', result
 
 

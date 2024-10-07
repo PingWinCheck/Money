@@ -1,15 +1,23 @@
-from typing import Any
+from typing import Any, Annotated
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from auth.schemas import UserRead
 
 
 class RulerSchema(BaseModel):
     id: int
-    name: str
+    name: Annotated[str, Field(description='Имя правителя')]
     start_year: int
     finish_year: int
     photo_link: str
+
+
+class RulersResponseSchema(BaseModel):
+    total_items: int
+    items_per_page: int
+    current_page: int
+    total_pages: int
+    data: list[RulerSchema]
 
 
 class TypeMoneySchema(BaseModel):

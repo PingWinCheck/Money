@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, validator
 from typing import Annotated
 from fastapi import Form
 from dataclasses import dataclass

@@ -12,8 +12,10 @@ from catalog.crud import (get_types_moneys_for_ruler, get_money_for_type_unique,
                           add_money_in_current_user, get_all_money_current_user, get_ruler_with_type_money_list,
                           get_ruler_with_type_with_money_list, get_rulers_v2,
                           get_total_count_for_ruler)
-from catalog.schemas import RulerSchema, TypeMoneySchema, MoneySchema, MoneySchemaExcludeYear, MoneyFromTheUser
+from catalog.schemas import RulerSchema, TypeMoneySchema, MoneySchema, MoneySchemaExcludeYear, MoneyFromTheUser, \
+    RulersResponseSchema
 from auth.dependences import get_current_user_db
+from catalog.dao import RulerDAO
 
 
 router = APIRouter(prefix="/catalog", tags=['Catalog'])
@@ -25,15 +27,13 @@ router_v2 = APIRouter(prefix='/v2/catalog', tags=['Catalog'])
 #     return await get_rulers(session=session)
 
 
-@router_v2.get('/rulers')
+@router_v2.get('/rulers', response_model=RulersResponseSchema)
 async def rulers_v2(session: Annotated[AsyncSession, Depends(get_session)],
                     page: Annotated[int, Query(ge=1)] = 1,
                     limit: Annotated[int, Query(ge=1)] = 3):
     offset = -limit + page * limit
-    # total_items = await get_count_all_rulers(session=session)
     total_items = await get_total_count_for_ruler(session=session)
-
-    result = await get_rulers_v2(session=session, offset=offset, limit=limit)
+    result = await RulerDAO.get_all_items_with_offset_and_limit(session=session, offset=offset, limit=limit)
     total_page = math.ceil(total_items / limit)
     sleep(1)
     if result:
