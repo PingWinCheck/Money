@@ -2,6 +2,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth.exeptions import ex_incorrect_token
 from core.dependencies import get_session
 from fastapi.security import OAuth2PasswordBearer
 
@@ -22,6 +23,9 @@ async def get_current_user_db(token: Annotated[str, Depends(bearer_schema)],
                               session: Annotated[AsyncSession, Depends(get_session)],
                               ) -> User:
     payload = check_jwt(token)
+    # TODO: запрет на доступ, через рефреш токен, посредством проверки на наличие jti, вероятно нужно будет переписать, на более очевидный способ
+    if payload.get('jti'):
+        raise ex_incorrect_token
     sub = payload.get('sub')
     # current_user = await user_read(session=session, username=sub)
     current_user = await UserDAO.get_one_or_none_item_by_filter(session=session, username=sub)

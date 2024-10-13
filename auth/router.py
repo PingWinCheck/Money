@@ -40,7 +40,8 @@ template = Jinja2Templates('auth/templates')
 #                             detail='User or email is already exists')
 #     return current_user
 
-@router.post('/register', response_model=UserBase, responses={409: {'description': ex_user_is_already.detail}})
+@router.post('/register', response_model=UserBase, status_code=201,
+             responses={409: {'description': ex_user_is_already.detail}})
 async def register(user: Annotated[UserCreate, Depends()], session: Annotated[AsyncSession, Depends(get_session)]):
     password_hash = gen_password_hash(user.password)
     already_exists = await UserDAO.get_one_or_none_item_by_filter(session=session,
@@ -80,7 +81,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
-@router.post('/refresh')
+@router.get('/refresh')
 async def refresh(payload_current_token: Annotated[dict, Depends(get_current_payload_in_token)]) -> Token:
     if not payload_current_token.get('jti') or not await check_jti_in_redis(payload_current_token.get('jti')):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,

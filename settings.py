@@ -13,6 +13,13 @@ class Settings(BaseSettings):
     db_port: str = '5432'
     db_name: str = 'POSTGRES'
 
+    # конфиг для тест постгрес дб
+    test_db_user: str = 'POSTGRES'
+    test_db_password: str = 'POSTGRES'
+    test_db_host: str = 'localhost'
+    test_db_port: str = '5432'
+    test_db_name: str = 'POSTGRES'
+
     # ключи для jwt
     private_key: str | None = None  # приватный ключ rsa для подписи jwt
     public_key: str | None = None  # публичный ключ rsa для проверки подписи jwt
