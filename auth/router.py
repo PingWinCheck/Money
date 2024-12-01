@@ -5,27 +5,27 @@ from pydantic import EmailStr
 from asyncpg import UniqueViolationError
 from fastapi import APIRouter, Depends, Request, HTTPException, status, Form, BackgroundTasks
 from sqlalchemy.exc import IntegrityError
-
-from auth.dependences import get_current_payload_in_token, get_current_user_db, bearer_schema
-from auth.mail_service.sender_messages import send_message_verification_mail
+from fastapi.responses import RedirectResponse
+from auth.dependences import get_current_payload_in_token, get_current_user_db, bearer_schema, get_active_current_user
+from auth.mail_service.sender_messages import send_message_verification_mail, send_message_verification_mail_with_rmq
 from core.dependencies import get_session
 from fastapi.security import OAuth2PasswordRequestForm
 
 from auth.models import User
-from auth.schemas import UserCreate, UserBase, Token
+from auth.schemas import UserCreate, UserBase, Token, ErrorResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from auth.crud import user_create, user_read, user_update_password, user_delete, verification_mail_true, \
-    user_read_with_id
+    user_read_with_id, deleter
 from auth.utils import (check_password, gen_jwt, authenticate_user, generate_jti_and_add_or_update_redis,
-                        check_jti_in_redis)
+                        check_jti_in_redis, delete_jti_in_redis)
 import secrets
 from datetime import timedelta
 from settings import settings
 from auth.redis import redis_client
 from auth.dao import UserDAO
 from auth.utils import gen_password_hash
-from auth.exeptions import ex_user_is_already, ex_invalid_login_or_password
+from auth.exeptions import ex_user_is_already, ex_invalid_login_or_password, ex_incorrect_token
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 template = Jinja2Templates('auth/templates')
@@ -56,7 +56,7 @@ async def register(user: Annotated[UserCreate, Depends()], session: Annotated[As
 
 
 # frontend
-@router.get('/login')
+@router.get('/login', deprecated=True)
 async def reg(request: Request):
     return template.TemplateResponse(request, 'login.html')
 
@@ -65,8 +65,6 @@ async def reg(request: Request):
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                 session: Annotated[AsyncSession, Depends(get_session)]):
     current_user = await authenticate_user(form_data, session)
-    if current_user is None:
-        raise ex_invalid_login_or_password
     payload_access = {'sub': current_user.username,
                       'id': str(current_user.id),
                       'email': current_user.email}
@@ -99,6 +97,16 @@ async def refresh(payload_current_token: Annotated[dict, Depends(get_current_pay
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
+#TODO Проверить работоспособность
+@router.get('/logout')
+async def logout(payload_refresh_token: Annotated[dict, Depends(get_current_payload_in_token)]):
+    jti = payload_refresh_token.get('jti')
+    if jti:
+        await delete_jti_in_redis(jti=jti)
+        return RedirectResponse(url='/')
+    raise ex_incorrect_token
+
+
 @router.get('/user/{username}',
             response_model=UserBase,
             responses={404: {'description': 'Пользователя с ником: {username} не существует'}}
@@ -117,7 +125,7 @@ async def get_user(username: str,
 @router.put('/my_profile', response_model=UserBase)
 async def change_password(old_password: Annotated[str, Form()],
                           new_password: Annotated[str, Form()],
-                          current_user: Annotated[User, Depends(get_current_user_db)],
+                          current_user: Annotated[User, Depends(get_active_current_user)],
                           session: Annotated[AsyncSession, Depends(get_session)]):
     # TODO переписать круд на дао
     try:
@@ -131,15 +139,15 @@ async def change_password(old_password: Annotated[str, Form()],
     return user
 
 
-@router.delete('/user/{username}')
-async def del_user(session: Annotated[AsyncSession, Depends(get_session)]):
-    if await user_delete(session=session):
-        return 'ok'
-    return 'error'
+@router.delete('/my_profile')
+async def del_user(session: Annotated[AsyncSession, Depends(get_session)],
+                   current_user: Annotated[User, Depends(get_active_current_user)]):
+    await deleter(session=session, obj=current_user)
+    return RedirectResponse('/')
 
 
-@router.get('/my_profile', response_model=UserBase)
-async def my_profile(user: Annotated[User, Depends(get_current_user_db)]):
+@router.get('/my_profile', response_model=UserBase, responses={403: {'model': ErrorResponse}})
+async def my_profile(user: Annotated[User, Depends(get_active_current_user)]):
     return user
 
 
@@ -157,11 +165,22 @@ async def confirm_mail_token(session: Annotated[AsyncSession, Depends(get_sessio
     return {'message': 'Токена не существует'}
 
 
-@router.get('/confirm-mail')
-async def confirm_mail(user: Annotated[User, Depends(get_current_user_db)],
-                       background_tasks: BackgroundTasks):
-    background_tasks.add_task(send_message_verification_mail, user.email, user.id)
+# @router.get('/confirm-mail')
+# async def confirm_mail(user: Annotated[User, Depends(get_current_user_db)],
+#                        background_tasks: BackgroundTasks):
+#     background_tasks.add_task(send_message_verification_mail, user.email, user.id)
+#     return {'message': f'Для подтверждения почты, оправлено письмо к вам на почту {user.email}'}
+
+@router.get('/confirm-mail', responses={403: {'description': 'Статус ответ если пользователь удален, либо не активен',
+                                              'content': {'application/json': {
+                                                  'schema': ErrorResponse.model_json_schema(),
+                                                  'examples': {
+                                                      'example1': {'summary': 'Ответ при ошибке',
+                                                          'value': ErrorResponse(detail='Сообщение об ошибке')}}}}}})
+async def confirm_mail(user: Annotated[User, Depends(get_active_current_user)]):
+    send_message_verification_mail_with_rmq(to=user.email, user_id=user.id)
     return {'message': f'Для подтверждения почты, оправлено письмо к вам на почту {user.email}'}
+
 
 
 # @router.post('/swap_mail')

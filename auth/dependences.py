@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.exeptions import ex_incorrect_token
@@ -29,4 +29,14 @@ async def get_current_user_db(token: Annotated[str, Depends(bearer_schema)],
     sub = payload.get('sub')
     # current_user = await user_read(session=session, username=sub)
     current_user = await UserDAO.get_one_or_none_item_by_filter(session=session, username=sub)
+    if current_user is None:
+        raise HTTPException(status_code=403,
+                            detail='Не удалось идентифицировать вас, возможно ваша учетная запись удалена')
     return current_user
+
+
+async def get_active_current_user(current_user: Annotated[User, Depends(get_current_user_db)]):
+    if current_user.is_active is True:
+        return current_user
+    raise HTTPException(status_code=403,
+                        detail='Ваша учетная запись не активна, либо удалена')

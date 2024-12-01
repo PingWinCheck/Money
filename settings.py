@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     test_db_port: str = '5432'
     test_db_name: str = 'POSTGRES'
 
-    # ключи для jwt
+    # конфиг для jwt
     private_key: str | None = None  # приватный ключ rsa для подписи jwt
     public_key: str | None = None  # публичный ключ rsa для проверки подписи jwt
     expire_access_token_seconds: int = 60 * 15
@@ -31,9 +31,18 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 0
 
-    # smtp
+    # конфиг для smtp
     smtp_pass: str = ''
     smtp_login: str = ''
+    smtp_host: str = ''
+    smtp_port: int = 0
+
+    # конфиг для RabbitMQ
+    rmq_user: str = ''
+    rmq_pass: str = ''
+    rmq_host: str = ''
+    rmq_port: int = 0
+    rmq_queue: str
 
 
 load_dotenv()

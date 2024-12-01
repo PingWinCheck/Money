@@ -56,3 +56,8 @@ async def user_read_with_id(user_id: UUID,
                             session: AsyncSession):
     stmt = select(User).where(User.id == user_id)
     return await session.scalar(stmt)
+
+
+async def deleter(session: AsyncSession, obj):
+    await session.delete(obj)
+    await session.commit()

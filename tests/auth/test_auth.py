@@ -214,3 +214,23 @@ async def test_refresh_token(authenticate_user, client_async):
                                                                  headers={'Authorization': new_refresh_token_bearer})
     assert new_response_with_new_refresh_token.status_code == 200
 
+
+# TODO fix
+@pytest.mark.asyncio
+async def test_logout(authenticate_user, client_async):
+    assert authenticate_user.status_code == 200
+    response_without_token = await client_async.get('/auth/logout')
+    assert response_without_token.status_code == 401
+
+    response_with_access_token = await client_async.get('/auth/logout',
+                                                        headers={
+                                                               'Authorization': 'Bearer ' + authenticate_user.json()[
+                                                                   'access_token']})
+    assert response_with_access_token.status_code == 401
+
+    response_with_refresh_token = await client_async.get('/auth/logout',
+                                                         headers={
+                                                               'Authorization': 'Bearer ' + authenticate_user.json()[
+                                                                   'refresh_token']})
+    assert response_with_refresh_token.status_code == 307
+

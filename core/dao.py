@@ -8,8 +8,8 @@ class BaseDAO:
     model = None
 
     @classmethod
-    async def get_one_or_none_item_by_id(cls, session: AsyncSession, model_id: int) -> Optional[model]:
-        stmt = (select(cls.model).filter_by(id=model_id))
+    async def get_one_or_none_item_by_id(cls, session: AsyncSession, id_: int) -> Optional[model]:
+        stmt = (select(cls.model).filter_by(id=id_))
         result = await session.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -38,6 +38,7 @@ class BaseDAO:
         await session.commit()
         await session.refresh(_new_instance)
         return _new_instance
+
 
     # @classmethod
     # async def update_item_by_id(cls, session: AsyncSession, model_id: int, **data):

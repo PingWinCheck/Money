@@ -9,6 +9,7 @@ from jwt.exceptions import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordRequestForm
 
+from auth.exeptions import ex_invalid_login_or_password
 from auth.models import User
 from auth.schemas import UserCreate
 from auth.crud import user_read
@@ -48,10 +49,8 @@ def check_jwt(token: str) -> dict | None:
 async def authenticate_user(form_data: OAuth2PasswordRequestForm, session: AsyncSession) -> User | None:
     # current_user = await user_read(session=session, username=form_data.username)
     current_user = await UserDAO.get_one_or_none_item_by_filter(session=session, username=form_data.username)
-    if current_user is None:
-        return None
-    if not check_password(form_data.password, current_user.password_hash):
-        return None
+    if current_user is None or not check_password(form_data.password, current_user.password_hash):
+        raise ex_invalid_login_or_password
     return current_user
 
 
@@ -66,3 +65,7 @@ async def generate_jti_and_add_or_update_redis(user: str, expire_seconds: int, o
 async def check_jti_in_redis(jti: str):
     if redis_client.get(jti):
         return True
+
+
+async def delete_jti_in_redis(jti: str):
+    redis_client.delete(jti)

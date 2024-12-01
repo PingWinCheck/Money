@@ -14,7 +14,7 @@ from catalog.crud import (get_types_moneys_for_ruler, get_money_for_type_unique,
                           get_total_count_for_ruler)
 from catalog.schemas import RulerSchema, TypeMoneySchema, MoneySchema, MoneySchemaExcludeYear, MoneyFromTheUser, \
     RulersResponseSchema
-from auth.dependences import get_current_user_db
+from auth.dependences import get_current_user_db, get_active_current_user
 from catalog.dao import RulerDAO
 
 
@@ -94,14 +94,14 @@ async def current_money_all_year(type_id: int,
 
 
 @router.post('/add_money_me')
-async def add_money_me(current_user: Annotated[User, Depends(get_current_user_db)],
+async def add_money_me(current_user: Annotated[User, Depends(get_active_current_user)],
                        money_id: Annotated[int, Form()],
                        session: Annotated[AsyncSession, Depends(get_session)]):
     return await add_money_in_current_user(user_id=current_user.id, money_id=money_id, session=session)
 
 
 @router.get('/my_catalog', response_model=MoneyFromTheUser)
-async def my_catalog(current_user: Annotated[User, Depends(get_current_user_db)],
+async def my_catalog(current_user: Annotated[User, Depends(get_active_current_user)],
                      session: Annotated[AsyncSession, Depends(get_session)]):
     res = await get_all_money_current_user(user_id=current_user.id, session=session)
     return res

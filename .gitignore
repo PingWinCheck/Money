@@ -1,3 +1,4 @@
 .idea
 .env
 core/logging.log
+.postgres
