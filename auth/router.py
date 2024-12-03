@@ -12,7 +12,7 @@ from core.dependencies import get_session
 from fastapi.security import OAuth2PasswordRequestForm
 
 from auth.models import User
-from auth.schemas import UserCreate, UserBase, Token, ErrorResponse
+from auth.schemas import UserCreate, UserBase, Token, ErrorResponse, UserRead
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from auth.crud import user_create, user_read, user_update_password, user_delete, verification_mail_true, \
@@ -182,12 +182,20 @@ async def confirm_mail(user: Annotated[User, Depends(get_active_current_user)]):
     return {'message': f'Для подтверждения почты, оправлено письмо к вам на почту {user.email}'}
 
 
-
 # @router.post('/swap_mail')
 # async def swap_mail(session: Annotated[AsyncSession, Depends(get_session)],
 #                     current_user: Annotated[User, Depends(get_current_user_db)],
 #                     mail: Annotated[EmailStr, Form()]):
 #     result = await UserDAO.update_item_by_id(session=session, model_id=current_user.id, email=mail)
 #     return 'result', result
-
+# TODO add activate uri
+@router.patch('user/{user_id}/deactivate', response_model=UserRead,
+              responses={404: {'description': 'User not found'}})
+async def user_deactivate(user_id: UUID,
+                          session: Annotated[AsyncSession, Depends(get_session)]):
+    user = await UserDAO.deactivate(user_id=user_id, session=session)
+    if not user:
+        raise HTTPException(status_code=404,
+                            detail='User not found')
+    return user
 

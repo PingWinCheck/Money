@@ -24,6 +24,7 @@ class UserBase(BaseModel):
 
 class UserRead(UserBase):
     id: UUID
+    is_active: bool
 
 
 class Token(BaseModel):
