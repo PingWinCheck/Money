@@ -54,9 +54,9 @@ async def authenticate_user(form_data: OAuth2PasswordRequestForm, session: Async
     return current_user
 
 
-async def generate_jti_and_add_or_update_redis(user: str, expire_seconds: int, old_jti: str | None = None) -> str:
+async def generate_jti_and_add_or_update_redis(user_id: str, expire_seconds: int, old_jti: str | None = None) -> str:
     jti = str(uuid.uuid4())
-    redis_client.set(jti, user, ex=expire_seconds)
+    redis_client.set(jti, user_id, ex=expire_seconds)
     if old_jti:
         redis_client.delete(old_jti)
     return jti

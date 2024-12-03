@@ -16,12 +16,6 @@ if TYPE_CHECKING:
     from catalog.models import Money
 
 
-# class UserRole(Enum):
-#     user = 'user'
-#     admin = 'admin'
-#     moderator = 'moderator'
-
-
 class User(Base):
     __tablename__ = 'users'
 
@@ -37,7 +31,7 @@ class User(Base):
     # update_at = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc),
     #                           onupdate=datetime.now(timezone.utc))
     moneys: Mapped[list["Money"]] = relationship('Money', secondary='money_for_users', back_populates='users')
-    roles: Mapped[list["Role"]] = relationship('Role', secondary='UserRole', back_populates='users')
+    roles: Mapped[list["Role"]] = relationship('Role', secondary='user_roles_association', back_populates='users')
 
 
 class Role(Base):
@@ -46,9 +40,9 @@ class Role(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(unique=True, index=True)
     description: Mapped[str | None] = mapped_column(default=None)
-    users: Mapped[list["User"]] = relationship('User', secondary='UserRole', back_populates='roles')
+    users: Mapped[list["User"]] = relationship('User', secondary='user_roles_association', back_populates='roles')
     permissions: Mapped[list["Permission"]] = relationship('Permission',
-                                                           secondary='RolePermissionAssociation',
+                                                           secondary='role_permission_association',
                                                            back_populates='roles')
 
 
@@ -59,7 +53,7 @@ class Permission(Base):
     name: Mapped[str] = mapped_column(unique=True, index=True)
     description: Mapped[str | None] = mapped_column(default=None)
     roles: Mapped[list["Role"]] = relationship('Role',
-                                               secondary='RolePermissionAssociation',
+                                               secondary='role_permission_association',
                                                back_populates='permissions')
 
 

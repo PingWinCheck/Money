@@ -6,7 +6,8 @@ from asyncpg import UniqueViolationError
 from fastapi import APIRouter, Depends, Request, HTTPException, status, Form, BackgroundTasks
 from sqlalchemy.exc import IntegrityError
 from fastapi.responses import RedirectResponse
-from auth.dependences import get_current_payload_in_token, get_current_user_db, bearer_schema, get_active_current_user
+from auth.dependences import (get_current_payload_in_token, get_current_user_db, bearer_schema, get_active_current_user,
+                              check_permission)
 from auth.mail_service.sender_messages import send_message_verification_mail, send_message_verification_mail_with_rmq
 from core.dependencies import get_session
 from fastapi.security import OAuth2PasswordRequestForm
@@ -26,6 +27,7 @@ from auth.redis import redis_client
 from auth.dao import UserDAO
 from auth.utils import gen_password_hash
 from auth.exeptions import ex_user_is_already, ex_invalid_login_or_password, ex_incorrect_token
+from auth.permissions import PermissionEnum
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 template = Jinja2Templates('auth/templates')
@@ -65,12 +67,12 @@ async def reg(request: Request):
 async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                 session: Annotated[AsyncSession, Depends(get_session)]):
     current_user = await authenticate_user(form_data, session)
-    payload_access = {'sub': current_user.username,
-                      'id': str(current_user.id),
+    payload_access = {'sub': str(current_user.id),
+                      'username': current_user.username,
                       'email': current_user.email}
     access_token = gen_jwt(payload=payload_access,
                            expire=timedelta(seconds=settings.expire_access_token_seconds))
-    jti = await generate_jti_and_add_or_update_redis(user=current_user.username,
+    jti = await generate_jti_and_add_or_update_redis(user_id=str(current_user.id),
                                                      expire_seconds=settings.expire_refresh_token_seconds)
     payload_refresh = payload_access.copy()
     payload_refresh['jti'] = jti
@@ -86,7 +88,7 @@ async def refresh(payload_current_token: Annotated[dict, Depends(get_current_pay
                             detail='invalid token',
                             headers={'WWW-Authenticate': 'Bearer'})
 
-    jti = await generate_jti_and_add_or_update_redis(user=payload_current_token['sub'],
+    jti = await generate_jti_and_add_or_update_redis(user_id=payload_current_token['sub'],
                                                      expire_seconds=settings.expire_refresh_token_seconds,
                                                      old_jti=payload_current_token['jti'])
     payload_current_token['jti'] = jti
@@ -189,13 +191,13 @@ async def confirm_mail(user: Annotated[User, Depends(get_active_current_user)]):
 #     result = await UserDAO.update_item_by_id(session=session, model_id=current_user.id, email=mail)
 #     return 'result', result
 # TODO add activate uri
-@router.patch('user/{user_id}/deactivate', response_model=UserRead,
+@router.patch('user/{user_id}/swap_activate', response_model=UserRead,
               responses={404: {'description': 'User not found'}})
-async def user_deactivate(user_id: UUID,
-                          session: Annotated[AsyncSession, Depends(get_session)]):
-    user = await UserDAO.deactivate(user_id=user_id, session=session)
+async def swap_activate(user_id: UUID,
+                        session: Annotated[AsyncSession, Depends(get_session)],
+                        current_user: Annotated[User, Depends(check_permission(PermissionEnum.USER_DEACTIVATE.name))]):
+    user = await UserDAO.swap_activate(user_id=user_id, session=session)
     if not user:
         raise HTTPException(status_code=404,
                             detail='User not found')
     return user
-
