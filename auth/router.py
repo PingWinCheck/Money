@@ -28,7 +28,9 @@ from auth.dao import UserDAO
 from auth.utils import gen_password_hash
 from auth.exeptions import ex_user_is_already, ex_invalid_login_or_password, ex_incorrect_token
 from auth.permissions import PermissionEnum
+from core.log import get_logger
 
+log = get_logger()
 router = APIRouter(prefix='/auth', tags=['auth'])
 template = Jinja2Templates('auth/templates')
 
@@ -190,8 +192,8 @@ async def confirm_mail(user: Annotated[User, Depends(get_active_current_user)]):
 #                     mail: Annotated[EmailStr, Form()]):
 #     result = await UserDAO.update_item_by_id(session=session, model_id=current_user.id, email=mail)
 #     return 'result', result
-# TODO add activate uri
-@router.patch('user/{user_id}/swap_activate', response_model=UserRead,
+
+@router.patch('/user/{user_id}/swap_activate', response_model=UserRead,
               responses={404: {'description': 'User not found'}})
 async def swap_activate(user_id: UUID,
                         session: Annotated[AsyncSession, Depends(get_session)],
@@ -200,4 +202,5 @@ async def swap_activate(user_id: UUID,
     if not user:
         raise HTTPException(status_code=404,
                             detail='User not found')
+    log.info('The userID %r changed the userID %r activation field to %r', current_user.id, user.id, user.is_active)
     return user
