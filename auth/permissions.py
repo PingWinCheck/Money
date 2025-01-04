@@ -1,6 +1,6 @@
 from enum import Enum
 
 
-class PermissionEnum(Enum):
-    USER_DEACTIVATE = 'user_deactivate'
+class PermissionEnum(str, Enum):
+    USER_DEACTIVATE = 'USER_DEACTIVATE'
 

@@ -6,6 +6,7 @@ from core.log import get_logger
 from fastapi.responses import JSONResponse
 from catalog.routers import router as catalog_router, router_v2 as catalog_router_v2
 from fastapi.middleware.cors import CORSMiddleware
+from chat.router import router as router_chat
 
 logger = get_logger()
 
@@ -40,6 +41,7 @@ async def exception_handler(request: Request, exc):
 app.include_router(auth_router)
 app.include_router(catalog_router)
 app.include_router(catalog_router_v2)
+app.include_router(router_chat(prefix='/chat', tags=['chat']))
 
 static = StaticFiles(directory='static')
 app.mount('/static', static)

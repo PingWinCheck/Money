@@ -197,7 +197,7 @@ async def confirm_mail(user: Annotated[User, Depends(get_active_current_user)]):
               responses={404: {'description': 'User not found'}})
 async def swap_activate(user_id: UUID,
                         session: Annotated[AsyncSession, Depends(get_session)],
-                        current_user: Annotated[User, Depends(check_permission(PermissionEnum.USER_DEACTIVATE.name))]):
+                        current_user: Annotated[User, Depends(check_permission(PermissionEnum.USER_DEACTIVATE))]):
     user = await UserDAO.swap_activate(user_id=user_id, session=session)
     if not user:
         raise HTTPException(status_code=404,
