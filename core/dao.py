@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +9,7 @@ class BaseDAO:
     model = None
 
     @classmethod
-    async def get_one_or_none_item_by_id(cls, session: AsyncSession, id_: int) -> Optional[model]:
+    async def get_one_or_none_item_by_id(cls, session: AsyncSession, id_: int | UUID) -> Optional[model]:
         stmt = (select(cls.model).filter_by(id=id_))
         result = await session.execute(stmt)
         return result.scalar_one_or_none()

@@ -41,7 +41,7 @@ async def exception_handler(request: Request, exc):
 app.include_router(auth_router)
 app.include_router(catalog_router)
 app.include_router(catalog_router_v2)
-app.include_router(router_chat(prefix='/chat', tags=['chat']))
+app.include_router(router_chat)
 
 static = StaticFiles(directory='static')
 app.mount('/static', static)

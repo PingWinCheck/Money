@@ -5,6 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 from database import Base
+from chat.models import Messanger
 from catalog import models
 from auth import models
 from settings import settings
