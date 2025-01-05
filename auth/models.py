@@ -14,6 +14,7 @@ from enum import Enum
 
 if TYPE_CHECKING:
     from catalog.models import Money
+    from chat.models import Messanger
 
 
 class User(Base):
@@ -32,6 +33,9 @@ class User(Base):
     #                           onupdate=datetime.now(timezone.utc))
     moneys: Mapped[list["Money"]] = relationship('Money', secondary='money_for_users', back_populates='users')
     roles: Mapped[list["Role"]] = relationship('Role', secondary='user_roles_association', back_populates='users')
+    message_sender: Mapped["Messanger"] = relationship(foreign_keys='Messanger.sender_id', back_populates='sender')
+    message_recipient: Mapped["Messanger"] = relationship(foreign_keys='Messanger.recipient_id',
+                                                          back_populates='recipient')
 
 
 class Role(Base):

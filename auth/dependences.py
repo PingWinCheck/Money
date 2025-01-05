@@ -46,7 +46,7 @@ async def get_active_current_user(current_user: Annotated[User, Depends(get_curr
                         detail='Ваша учетная запись не активна, либо удалена')
 
 
-def check_permission(permission: Union["PermissionEnum", str]) -> Callable:
+def check_permission(permission: "PermissionEnum") -> Callable:
     async def permission_checker(current_user: Annotated[User, Depends(get_active_current_user)]) -> User:
         user_permission_list = [permission_.name for role in current_user.roles for permission_ in role.permissions]
         if permission not in user_permission_list:
